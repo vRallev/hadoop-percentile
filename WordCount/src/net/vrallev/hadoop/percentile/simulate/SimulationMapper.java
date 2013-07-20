@@ -1,4 +1,4 @@
-package net.vrallev.hadoop.percentile;
+package net.vrallev.hadoop.percentile.simulate;
 
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -11,22 +11,29 @@ import org.apache.hadoop.mapred.Reporter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-public class PercentileMapper implements Mapper<LongWritable, Text, Text, DoubleWritable> {
+public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritable, Text> {
 
     public static final String DIRECTION = "DIRECTION";
     public static final String NODE_REF = "NODE_REF";
     public static final String DISTANCE = "DISTANCE";
     public static final String HAS_VEGETATION = "HAS_VEGETATION";
 
-    private static final int NUMBER_OF_SIMULATIONS = 10;
-    private static final int NUMBERS_AFTER_COMMA = 5;
-
-    //private final static IntWritable ONE = new IntWritable(1);
+    private Simulation mSimulation;
+    private int mNumberOfSimulations;
+    private int mNumbersAfterComma;
 
     public void configure(JobConf conf) {
+        String clazz = conf.get(Simulation.class.getSimpleName(), SimulationDefault.class.getName());
+        try {
+            mSimulation = (Simulation) Class.forName(clazz).newInstance();
+        } catch (Exception e) {
+            e.printStackTrace();
+            // ignore, job will fail later
+        }
 
+        mNumberOfSimulations = Integer.parseInt(conf.get(SimulationTool.NUMBER_OF_SIMULATIONS, "10"));
+        mNumbersAfterComma = Integer.parseInt(conf.get(SimulationTool.NUMBERS_AFTER_COMMA, "5"));
     }
 
     public void close() throws IOException {
@@ -34,20 +41,13 @@ public class PercentileMapper implements Mapper<LongWritable, Text, Text, Double
     }
 
     /*
-     * To cut down on object creation you create a single Text object, which you will reuse
+     * Avoid creation for a every map call.
      */
-    //private Text word = new Text();
-
     private Text mKey = new Text();
     private DoubleWritable mSimulationResult = new DoubleWritable();
 
-    /*
-     * This map- method is called once per input line; map tasks are run in parallel over subsets of the input files
-     */
     @Override
-    public void map(LongWritable key, Text value, OutputCollector<Text, DoubleWritable> output, Reporter reporter) throws IOException {
-        // Insert into HS_NRW_4708_NEIGHBOUR (DIRECTION,NODE_REF,BUFFER_ZONE,DISTANCE,HAS_VEGETATION,JKI_ID,OBJART,LF08_LF_ID,LF04_BBA_ID) values ('270','27270','1','5,1','0','632755','4101','640580','1227424');
-
+    public void map(LongWritable key, Text value, OutputCollector<DoubleWritable, Text> output, Reporter reporter) throws IOException {
         String[] tokens = parse(key, value);
 
         String direction = getValue(tokens, DIRECTION);
@@ -57,26 +57,10 @@ public class PercentileMapper implements Mapper<LongWritable, Text, Text, Double
 
         mKey.set(nodeRef + "_" + direction);
 
-        for (int i = 0; i < NUMBER_OF_SIMULATIONS; i++) {
-            mSimulationResult.set(round(simulate(distance, hasVegetation), NUMBERS_AFTER_COMMA));
-            output.collect(mKey, mSimulationResult);
+        for (int i = 0; i < mNumberOfSimulations; i++) {
+            mSimulationResult.set(round(mSimulation.simulate(distance, hasVegetation), mNumbersAfterComma));
+            output.collect(mSimulationResult, mKey);
         }
-
-        /*
-        Percentile percentile = new Percentile(100);
-        percentile.evaluate()
-        */
-
-        // Your value contains an entire line from your file
-//		String line = value.toString();
-//		// You tokenize the line using StringTokenizer
-//		StringTokenizer tokenizer = new StringTokenizer(line);
-//
-//		while (tokenizer.hasMoreTokens()) {
-//			word.set(tokenizer.nextToken().toLowerCase());
-//			// Thats the map-output (Text/IntWritable)
-//			output.collect(word, ONE);
-//		}
     }
 
     public static String[] parse(LongWritable key, Text value) throws IllegalArgumentException {
@@ -95,10 +79,6 @@ public class PercentileMapper implements Mapper<LongWritable, Text, Text, Double
             throw new IllegalArgumentException("Wrong key token format, found at line " + key.get() + ", " + keyToken);
         }
 
-        // ('0','27269','1','-1','0','-1','-1',null,null);
-        //if (!valueToken.startsWith("('") || !valueToken.endsWith("');")) {
-        //    throw new IllegalArgumentException("Wrong value token format, found at line " + key.get() + ", " + valueToken);
-        //}
         if (!valueToken.startsWith("(") || !valueToken.endsWith(");")) {
             throw new IllegalArgumentException("Wrong value token format, found at line " + key.get() + ", " + valueToken);
         }
@@ -106,8 +86,6 @@ public class PercentileMapper implements Mapper<LongWritable, Text, Text, Double
         keyToken = keyToken.substring(1, keyToken.length() - 1);
         String[] keys = keyToken.split(",");
 
-        // '0','27269','1','-1','0','-1','-1',null,null
-        // '270','27270','1','5,1','0','632755','4101','640580','1227424'
         valueToken = valueToken.substring(1, valueToken.length() - 2);
         String[] values = valueToken.split("'");
         List<String> valueList = new ArrayList<String>();
@@ -158,15 +136,7 @@ public class PercentileMapper implements Mapper<LongWritable, Text, Text, Double
         }
     }
 
-    private Random mRandom = new Random();
-
-    public double simulate(String distance, String hasVegetation) {
-        // TODO: delete, used for unit testing
-//        mRandom.setSeed(distance.hashCode() + hasVegetation.hashCode());
-        return mRandom.nextGaussian();
-    }
-
-    public double round(double number, int countAfterComma) {
+    private static double round(double number, int countAfterComma) {
         long val = Math.round(number * Math.pow(10, countAfterComma));
         return val / Math.pow(10, countAfterComma);
     }
