@@ -19,6 +19,12 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
     public static final String DISTANCE = "DISTANCE";
     public static final String HAS_VEGETATION = "HAS_VEGETATION";
 
+    public static final DoubleWritable COUNT_KEY = new DoubleWritable(Double.MAX_VALUE);
+    public static final Text COUNT_VALUE = new Text("count");
+
+    public static final int DEFAULT_NUMBER_OF_SIMULATIONS = 10; // TODO: change to 1000
+    public static final int DEFAULT_NUMBERS_AFTER_COMMA = 5;
+
     private Simulation mSimulation;
     private int mNumberOfSimulations;
     private int mNumbersAfterComma;
@@ -32,8 +38,8 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
             // ignore, job will fail later
         }
 
-        mNumberOfSimulations = Integer.parseInt(conf.get(SimulationTool.NUMBER_OF_SIMULATIONS, "10"));
-        mNumbersAfterComma = Integer.parseInt(conf.get(SimulationTool.NUMBERS_AFTER_COMMA, "5"));
+        mNumberOfSimulations = Integer.parseInt(conf.get(SimulationTool.NUMBER_OF_SIMULATIONS, String.valueOf(DEFAULT_NUMBER_OF_SIMULATIONS)));
+        mNumbersAfterComma = Integer.parseInt(conf.get(SimulationTool.NUMBERS_AFTER_COMMA, String.valueOf(DEFAULT_NUMBERS_AFTER_COMMA)));
     }
 
     public void close() throws IOException {
@@ -57,10 +63,13 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
 
         mKey.set(nodeRef + "_" + direction);
 
+        // TODO: parallelize with MapRunner
         for (int i = 0; i < mNumberOfSimulations; i++) {
             mSimulationResult.set(round(mSimulation.simulate(distance, hasVegetation), mNumbersAfterComma));
             output.collect(mSimulationResult, mKey);
         }
+
+        output.collect(COUNT_KEY, COUNT_VALUE);
     }
 
     public static String[] parse(LongWritable key, Text value) throws IllegalArgumentException {

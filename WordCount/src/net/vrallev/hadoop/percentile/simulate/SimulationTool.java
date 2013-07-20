@@ -6,6 +6,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
 import java.io.File;
@@ -65,14 +66,30 @@ public class SimulationTool extends Configured implements Tool {
         conf.setReducerClass(SimulationReducer.class);
 
         conf.setInputFormat(TextInputFormat.class);
-        conf.setOutputFormat(TextOutputFormat.class);
+        conf.setOutputFormat(OutFormat.class);
 
         FileInputFormat.setInputPaths(conf, new Path(args[0]));
         FileOutputFormat.setOutputPath(conf, new Path(args[1]));
 
         JobClient.runJob(conf);
 
-        return 0; // it will throw an Exception, if it crashes, so always return zero
+        return 0; // it will throw an Exception, if it crashes, so always return zero, we don't care here anymore
     }
 
+    private static class OutFormat extends MultipleTextOutputFormat<Text, Text> {
+        @Override
+        protected String generateFileNameForKeyValue(Text key, Text value, String name) {
+            if (SimulationMapper.COUNT_VALUE.equals(key)) {
+                return "total_simulation.txt";
+            }
+
+            String[] split = value.toString().split("'");
+            for (String s : split) {
+                if (s.contains("_")) {
+                    return "results/" + s.substring(s.indexOf("_") + 1) + ".txt";
+                }
+            }
+            return super.generateFileNameForKeyValue(key, value, name);
+        }
+    }
 }

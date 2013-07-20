@@ -9,6 +9,9 @@ import org.apache.hadoop.util.ToolRunner;
 public class Main {
 
     public static void main(String... args) throws Exception {
+
+        // TODO: print possible parameters
+
         int res = ToolRunner.run(new SimulationTool(), args);
         System.exit(res);
     }
