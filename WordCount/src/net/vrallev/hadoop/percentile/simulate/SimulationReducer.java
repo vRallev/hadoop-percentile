@@ -27,25 +27,42 @@ public class SimulationReducer implements Reducer<DoubleWritable, Text, Text, Te
 	public void reduce(DoubleWritable key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 
         if (key.get() == SimulationMapper.COUNT_KEY.get()) {
-            int count = 0;
-            for (; values.hasNext(); count++) {
-                values.next();
+            int[] count = new int[8];
+            while (values.hasNext()) {
+                int index = Integer.parseInt(values.next().toString()) / 45;
+                count[index]++;
             }
-            count *= mNumberOfSimulations;
-            output.collect(SimulationMapper.COUNT_VALUE, new Text(String.valueOf(count)));
+
+            int total = 0;
+            for (int i = 0; i < count.length; i++) {
+                count[i] *= mNumberOfSimulations;
+                output.collect(new Text("total_" + (i * 45)), new Text(String.valueOf(count[i])));
+                total += count[i];
+            }
+
+            output.collect(new Text("total_count"), new Text(String.valueOf(total)));
             return;
         }
 
         Text keyText = keyToText(key, mNumbersAfterComma);
-        Text[] texts = parseValues(values);
+//        Text[] texts = parseValues(values);
 
-        for (Text value : texts) {
-            output.collect(keyText, value);
+//        for (Text value : texts) {
+//            output.collect(keyText, value);
+//        }
+
+        while (values.hasNext()) {
+            output.collect(keyText, values.next());
         }
     }
 
     private static Text keyToText(DoubleWritable key, int numbersAfterComma) {
-        StringBuilder builder = new StringBuilder(String.valueOf(key.get()));
+        double val = key.get();
+        StringBuilder builder = new StringBuilder(String.valueOf(val));
+        if (val >= 0) {
+            builder.insert(0, " ");
+        }
+
         while(builder.length() - builder.indexOf(".") - 1 < numbersAfterComma) {
             builder.append('0');
         }

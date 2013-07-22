@@ -79,14 +79,15 @@ public class SimulationTool extends Configured implements Tool {
     private static class OutFormat extends MultipleTextOutputFormat<Text, Text> {
         @Override
         protected String generateFileNameForKeyValue(Text key, Text value, String name) {
-            if (SimulationMapper.COUNT_VALUE.equals(key)) {
+            if (key.toString().startsWith("total_")) {
                 return "total_simulation.txt";
             }
 
             String[] split = value.toString().split("'");
             for (String s : split) {
                 if (s.contains("_")) {
-                    return "results/" + s.substring(s.indexOf("_") + 1) + ".txt";
+                    return "results/" + s.substring(s.indexOf("_") + 1, s.indexOf(";")) + ".txt";
+//                    return "results/0.txt";
                 }
             }
             return super.generateFileNameForKeyValue(key, value, name);

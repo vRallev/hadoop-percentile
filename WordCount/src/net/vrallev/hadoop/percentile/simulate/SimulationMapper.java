@@ -20,7 +20,6 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
     public static final String HAS_VEGETATION = "HAS_VEGETATION";
 
     public static final DoubleWritable COUNT_KEY = new DoubleWritable(Double.MAX_VALUE);
-    public static final Text COUNT_VALUE = new Text("count");
 
     public static final int DEFAULT_NUMBER_OF_SIMULATIONS = 10; // TODO: change to 1000
     public static final int DEFAULT_NUMBERS_AFTER_COMMA = 5;
@@ -61,7 +60,12 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
         String distance = getValue(tokens, DISTANCE);
         String hasVegetation = getValue(tokens, HAS_VEGETATION);
 
-        mKey.set(nodeRef + "_" + direction);
+        StringBuilder builder = new StringBuilder(nodeRef + "_" + direction);
+        while(builder.length() < 15) {
+            builder.append(';');
+        }
+
+        mKey.set(builder.toString());
 
         // TODO: parallelize with MapRunner
         for (int i = 0; i < mNumberOfSimulations; i++) {
@@ -69,7 +73,7 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
             output.collect(mSimulationResult, mKey);
         }
 
-        output.collect(COUNT_KEY, COUNT_VALUE);
+        output.collect(COUNT_KEY, new Text(direction));
     }
 
     public static String[] parse(LongWritable key, Text value) throws IllegalArgumentException {
