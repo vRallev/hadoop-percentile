@@ -5,7 +5,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.*;
 
 public class SimulationReducer implements Reducer<DoubleWritable, Text, Text, Text> {
 
@@ -36,19 +36,12 @@ public class SimulationReducer implements Reducer<DoubleWritable, Text, Text, Te
             return;
         }
 
-        StringBuilder builder = new StringBuilder();
-        builder.append('(');
+        Text keyText = keyToText(key, mNumbersAfterComma);
+        Text[] texts = parseValues(values);
 
-        while(values.hasNext()) {
-            builder.append('\'').append(values.next()).append('\'');
-            if (values.hasNext()) {
-                builder.append(',');
-            }
+        for (Text value : texts) {
+            output.collect(keyText, value);
         }
-
-        builder.append(");");
-
-        output.collect(keyToText(key, mNumbersAfterComma), new Text(builder.toString()));
     }
 
     private static Text keyToText(DoubleWritable key, int numbersAfterComma) {
@@ -57,5 +50,42 @@ public class SimulationReducer implements Reducer<DoubleWritable, Text, Text, Te
             builder.append('0');
         }
         return new Text(builder.toString());
+    }
+
+    private static Text[] parseValues(Iterator<Text> values) {
+        Map<Integer, List<String>> coll = new HashMap<Integer, List<String>>();
+        while(values.hasNext()) {
+            String string = values.next().toString();
+            String[] split = string.split("_");
+            Integer key = Integer.valueOf(split[1]);
+            List<String> list = coll.get(key);
+            if (list == null) {
+                list = new ArrayList<String>();
+                coll.put(key, list);
+            }
+            list.add(string);
+        }
+
+        Text[] res = new Text[coll.size()];
+        int j = 0;
+        for (Integer key : coll.keySet()) {
+            StringBuilder builder = new StringBuilder();
+            builder.append('(');
+
+            List<String> valueList = coll.get(key);
+            for (int i = 0; i < valueList.size(); i++) {
+                builder.append('\'').append(valueList.get(i)).append('\'');
+                if (i + 1 < valueList.size()) {
+                    builder.append(',');
+                }
+
+            }
+
+            builder.append(");");
+            res[j] = new Text(builder.toString());
+            j++;
+        }
+
+        return res;
     }
 }
