@@ -3,7 +3,6 @@ package net.vrallev.hadoop.percentile.analyze;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 import java.io.*;
 
@@ -13,7 +12,7 @@ import java.io.*;
 public class SimplePercentileParser {
 
     private int[] mCountDirection;
-    private int mCountTotal;
+    // private int mCountTotal;
 
     private String[] mPercentiles;
 
@@ -44,9 +43,9 @@ public class SimplePercentileParser {
                 String[] line = iterator.nextLine().split("\t");
                 String key = line[0].split("_")[1];
 
-                if ("count".equals(key)) {
-                    mCountTotal = Integer.parseInt(line[1]);
-                } else {
+                if (!"count".equals(key)) {
+                    //mCountTotal = Integer.parseInt(line[1]);
+                // } else {
                     mCountDirection[Integer.parseInt(key) / 45] = Integer.parseInt(line[1]);
                 }
 

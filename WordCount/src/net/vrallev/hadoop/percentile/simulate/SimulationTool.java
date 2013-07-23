@@ -6,7 +6,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapred.lib.CombineFileRecordReader;
 import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
@@ -104,7 +103,6 @@ public class SimulationTool extends Configured implements Tool {
         conf.setInputFormat(TextInputFormat.class);
         conf.setOutputFormat(OutFormat.class);
 
-        // TODO
         conf.setNumReduceTasks(1);
 
         FileInputFormat.setInputPaths(conf, mInputFolder);

@@ -1,14 +1,10 @@
 package net.vrallev.hadoop.percentile;
 
-import net.vrallev.hadoop.percentile.analyze.PercentileMapper;
 import net.vrallev.hadoop.percentile.analyze.PercentileTool;
-import net.vrallev.hadoop.percentile.analyze.SimplePercentileParser;
 import net.vrallev.hadoop.percentile.simulate.SimulationTool;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.util.ToolRunner;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;

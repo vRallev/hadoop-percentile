@@ -1,7 +1,6 @@
 package net.vrallev.hadoop.percentile.analyze;
 
 
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -17,26 +16,23 @@ import java.io.IOException;
  */
 public class PercentileMapper implements Mapper<LongWritable, Text, IntWritable, Text> {
 
-    private int mCountTotal;
-    private int[] mCountDirection;
-
     private int[] mLinesTotal;
     private int[][] mLinesDirection;
 
     @Override
     public void configure(JobConf job) {
-        mCountTotal = job.getInt("count_total", -1);
-        mCountDirection = new int[8];
-        for (int i = 0; i < mCountDirection.length; i++) {
-            mCountDirection[i] = job.getInt("count_" + (i * 45), -1);
+        int countTotal = job.getInt("count_total", -1);
+        int[] countDirection = new int[8];
+        for (int i = 0; i < countDirection.length; i++) {
+            countDirection[i] = job.getInt("count_" + (i * 45), -1);
         }
 
         mLinesTotal = new int[100];
         mLinesDirection = new int[8][100];
 
-        fillPlaceholder(mCountTotal, mLinesTotal);
+        fillPlaceholder(countTotal, mLinesTotal);
         for (int i = 0; i < mLinesDirection.length; i++) {
-            fillPlaceholder(mCountDirection[i], mLinesDirection[i]);
+            fillPlaceholder(countDirection[i], mLinesDirection[i]);
         }
     }
 
@@ -90,10 +86,10 @@ public class PercentileMapper implements Mapper<LongWritable, Text, IntWritable,
 
     private static int getLineCountForNumber(int lineNumber, int[] placeHolder) {
         int res = 0;
-        for (int i = 0; i < placeHolder.length; i++) {
-            if (placeHolder[i] == lineNumber) {
+        for (int value : placeHolder) {
+            if (value == lineNumber) {
                 res++;
-            } else if (lineNumber < placeHolder[i]) {
+            } else if (lineNumber < value) {
                 return res;
             }
         }

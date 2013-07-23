@@ -60,7 +60,6 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
 
         mValue.set(nodeRef + "_" + direction);
 
-        // TODO: parallelize with MapRunner
         for (int i = 0; i < mNumberOfSimulations; i++) {
             mSimulationResult.set(round(mSimulation.simulate(distance, hasVegetation), mNumbersAfterComma));
             output.collect(mSimulationResult, mValue);
