@@ -64,9 +64,9 @@ public class SimulationReducer implements Reducer<DoubleWritable, Text, Text, Te
 
             StringBuilder valBuilder = new StringBuilder(valString);
             valBuilder.append(';').append(mDirectionLine[directionIndex]).append('_').append(mLine);
-            while (valBuilder.length() < 28) {
-                valBuilder.append('.');
-            }
+            // while (valBuilder.length() < 28) {
+            // valBuilder.append('.');
+            // }
 
             output.collect(keyText, new Text(valBuilder.toString()));
             mLine++;

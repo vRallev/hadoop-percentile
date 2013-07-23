@@ -54,13 +54,13 @@ public class PercentileMapper implements Mapper<LongWritable, Text, IntWritable,
 
         val = val[1].split("_");
         int lineNumberDirection = Integer.parseInt(val[0]);
-        int lineNumberTotal = Integer.parseInt(val[1].substring(0, val[1].indexOf(".")));
+        int lineNumberTotal = Integer.parseInt(val[1]);
 
         int lineCountForNumber = getLineCountForNumber(lineNumberTotal, mLinesTotal);
         mKey.set(lineNumberTotal);
         while (lineCountForNumber > 0) {
             lineCountForNumber--;
-            output.collect(mKey, new Text(valString.substring(0, valString.length() - 1) + "t"));
+            output.collect(mKey, new Text(valString + "t"));
         }
 
         lineCountForNumber = getLineCountForNumber(lineNumberDirection, mLinesDirection[Integer.parseInt(direction) / 45]);

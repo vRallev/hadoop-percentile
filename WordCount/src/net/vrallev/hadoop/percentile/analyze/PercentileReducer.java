@@ -41,17 +41,17 @@ public class PercentileReducer implements Reducer<IntWritable, Text, Text, Text>
             String direction = val[0].substring(val[0].indexOf("_") + 1);
 
             val = val[1].split("_");
-            int lineNumberDirection = Integer.parseInt(val[0]);
-            int lineNumberTotal = Integer.parseInt(val[1].substring(0, val[1].indexOf(".")));
 
-            double fractile;
+            double percentile;
             if (valString.endsWith("t")) {
-                fractile = lineNumberTotal / (double) mCountTotal;
+                int lineNumberTotal = Integer.parseInt(val[1].substring(0, val[1].length() - 1));
+                percentile = lineNumberTotal / (double) mCountTotal;
             } else {
-                fractile = lineNumberDirection / (double) mCountDirection[Integer.parseInt(direction) / 45];
+                int lineNumberDirection = Integer.parseInt(val[0]);
+                percentile = lineNumberDirection / (double) mCountDirection[Integer.parseInt(direction) / 45];
             }
 
-            int label = (int) (fractile * 100);
+            int label = (int) (percentile * 100);
             StringBuilder builder = new StringBuilder("Q_");
             if (label == 100) {
                 builder.append("1.00");

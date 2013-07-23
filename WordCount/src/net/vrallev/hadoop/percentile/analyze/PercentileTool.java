@@ -103,7 +103,7 @@ public class PercentileTool extends Configured implements Tool {
         protected String generateFileNameForKeyValue(Text key, Text value, String name) {
             String valString = value.toString();
             if (valString.endsWith("t")) {
-                value.set(valString.substring(0, valString.length() - 1) + ".");
+                value.set(valString.substring(0, valString.length() - 1));
                 return "all.txt";
             }
 
