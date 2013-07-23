@@ -2,7 +2,10 @@ package net.vrallev.hadoop.percentile.simulate;
 
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reducer;
+import org.apache.hadoop.mapred.Reporter;
 
 import java.io.IOException;
 import java.util.*;
@@ -12,10 +15,19 @@ public class SimulationReducer implements Reducer<DoubleWritable, Text, Text, Te
     private int mNumbersAfterComma;
     private int mNumberOfSimulations;
 
+    private int mLine;
+    private int[] mDirectionLine;
+
     @Override
 	public void configure(JobConf conf) {
-        mNumberOfSimulations = Integer.parseInt(conf.get(SimulationTool.NUMBER_OF_SIMULATIONS, String.valueOf(SimulationMapper.DEFAULT_NUMBER_OF_SIMULATIONS)));
-        mNumbersAfterComma = Integer.parseInt(conf.get(SimulationTool.NUMBERS_AFTER_COMMA, String.valueOf(SimulationMapper.DEFAULT_NUMBERS_AFTER_COMMA)));
+        mNumberOfSimulations = Integer.parseInt(conf.get(SimulationTool.NUMBER_OF_SIMULATIONS));
+        mNumbersAfterComma = Integer.parseInt(conf.get(SimulationTool.NUMBERS_AFTER_COMMA));
+
+        mLine = 1;
+        mDirectionLine = new int[8];
+        for (int i = 0; i < mDirectionLine.length; i++) {
+            mDirectionLine[i] = 1;
+        }
     }
 
 	@Override
@@ -45,14 +57,20 @@ public class SimulationReducer implements Reducer<DoubleWritable, Text, Text, Te
         }
 
         Text keyText = keyToText(key, mNumbersAfterComma);
-//        Text[] texts = parseValues(values);
-
-//        for (Text value : texts) {
-//            output.collect(keyText, value);
-//        }
 
         while (values.hasNext()) {
-            output.collect(keyText, values.next());
+            String valString = values.next().toString();
+            int directionIndex = Integer.parseInt(valString.split("_")[1]) / 45;
+
+            StringBuilder valBuilder = new StringBuilder(valString);
+            valBuilder.append(';').append(mDirectionLine[directionIndex]).append('_').append(mLine);
+            while (valBuilder.length() < 28) {
+                valBuilder.append('.');
+            }
+
+            output.collect(keyText, new Text(valBuilder.toString()));
+            mLine++;
+            mDirectionLine[directionIndex]++;
         }
     }
 
@@ -69,6 +87,10 @@ public class SimulationReducer implements Reducer<DoubleWritable, Text, Text, Te
         return new Text(builder.toString());
     }
 
+    /**
+     * @return All values concatenated for the specific direction
+     */
+    @Deprecated
     private static Text[] parseValues(Iterator<Text> values) {
         Map<Integer, List<String>> coll = new HashMap<Integer, List<String>>();
         while(values.hasNext()) {

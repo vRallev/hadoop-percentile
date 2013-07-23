@@ -1,6 +1,7 @@
-package net.vrallev.hadoop.percentile;
+package net.vrallev.hadoop.percentile.analyze;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
@@ -9,14 +10,14 @@ import java.io.*;
 /**
  * @author Ralf Wondratschek
  */
-public class PercentileParser {
+public class SimplePercentileParser {
 
     private int[] mCountDirection;
     private int mCountTotal;
 
     private String[] mPercentiles;
 
-    public PercentileParser(File simulationCount, File direction) {
+    public SimplePercentileParser(File simulationCount, File direction) {
         try {
             parseSimulationCount(simulationCount);
             parseDirection(direction);
@@ -64,31 +65,38 @@ public class PercentileParser {
         double stepSize = simulationCount / (double) mPercentiles.length;
         double skip = chunkSize * stepSize - chunkSize;
 
-        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
+        BufferedInputStream bis = null;
         byte[] buffer = new byte[(int) chunkSize];
 
-        for (int i = 0; i < mPercentiles.length; i++) {
-            while (skip < 0 && Math.abs(skip) >= chunkSize) {
-                // this check is used, when we have less simulations than percentiles
-                mPercentiles[i] = mPercentiles[i - 1];
-                skip += chunkSize * stepSize;
-                i++;
-            }
-            if (i >= mPercentiles.length) {
-                // check here again, because we incremented i
-                break;
+        try {
+            bis = new BufferedInputStream(new FileInputStream(file));
+
+            for (int i = 0; i < mPercentiles.length; i++) {
+                while (skip < 0 && Math.abs(skip) >= chunkSize) {
+                    // this check is used, when we have less simulations than percentiles
+                    mPercentiles[i] = mPercentiles[i - 1];
+                    skip += chunkSize * stepSize;
+                    i++;
+                }
+                if (i >= mPercentiles.length) {
+                    // check here again, because we incremented i
+                    break;
+                }
+
+                while (skip >= chunkSize) {
+                    skip(bis, chunkSize);
+                    skip -= chunkSize;
+                }
+
+                // minus chunkSize, because we read chunkSize many bytes now
+                skip += chunkSize * stepSize - chunkSize;
+
+                read(bis, buffer);
+                mPercentiles[i] = new String(buffer);
             }
 
-            while (skip >= chunkSize) {
-                skip(bis, chunkSize);
-                skip -= chunkSize;
-            }
-
-            // minus chunkSize, because we read chunkSize many bytes now
-            skip += chunkSize * stepSize - chunkSize;
-
-            read(bis, buffer);
-            mPercentiles[i] = new String(buffer);
+        } finally {
+            IOUtils.closeQuietly(bis);
         }
     }
 
