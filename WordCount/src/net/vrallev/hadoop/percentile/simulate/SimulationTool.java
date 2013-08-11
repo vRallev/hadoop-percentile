@@ -1,6 +1,7 @@
 package net.vrallev.hadoop.percentile.simulate;
 
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
@@ -87,7 +88,7 @@ public class SimulationTool extends Configured implements Tool {
         getConf().setInt(NUMBERS_AFTER_COMMA, mNumbersAfterComma);
 
         if (mClearOutputFolder) {
-            FileUtil.fullyDelete(new File(mOutputFolder.toString()));
+            FileSystem.get(getConf()).delete(mOutputFolder, true);
         }
 
         JobConf conf = new JobConf(getConf(), SimulationTool.class);

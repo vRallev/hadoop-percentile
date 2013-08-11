@@ -1,9 +1,8 @@
 package net.vrallev.hadoop.percentile.analyze;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.LineIterator;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -11,8 +10,9 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Properties;
 
 /**
@@ -26,20 +26,20 @@ public class PercentileTool extends Configured implements Tool {
     public static final String SIMULATION_COUNT = "simulationCount";
     public static final String CLEAR_OUTPUT_FOLDER = "clearOutputFolder_analyze";
 
-    private Path mInputFolder;
-    private Path mOutputFolder;
+    private final Path mInputFolder;
+    private final Path mOutputFolder;
 
-    private File mSimulationCountFile;
+    private final Path mSimulationCountFile;
     private int mCountTotal;
     private int[] mCountDirection;
 
-    private boolean mClearOutputFolder;
+    private final boolean mClearOutputFolder;
 
     public PercentileTool(Properties properties) {
         mInputFolder = new Path(properties.getProperty(INPUT_FOLDER));
         mOutputFolder = new Path(properties.getProperty(OUTPUT_FOLDER));
 
-        mSimulationCountFile = new File(properties.getProperty(SIMULATION_COUNT));
+        mSimulationCountFile = new Path(properties.getProperty(SIMULATION_COUNT));
 
         mClearOutputFolder = Boolean.parseBoolean(properties.getProperty(CLEAR_OUTPUT_FOLDER, "false"));
     }
@@ -49,7 +49,7 @@ public class PercentileTool extends Configured implements Tool {
         parseSimulationCount(mSimulationCountFile);
 
         if (mClearOutputFolder) {
-            FileUtil.fullyDelete(new File(mOutputFolder.toString()));
+            FileSystem.get(getConf()).delete(mOutputFolder, true);
         }
 
         getConf().setInt("count_total", mCountTotal);
@@ -78,23 +78,27 @@ public class PercentileTool extends Configured implements Tool {
         return 0;
     }
 
-    private void parseSimulationCount(File simulationCount) throws IOException {
+    private void parseSimulationCount(Path simulationCount) throws IOException {
         mCountDirection = new int[8];
-        LineIterator iterator = FileUtils.lineIterator(simulationCount);
+
+        FileSystem fs = FileSystem.get(getConf());
+        BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(simulationCount)));
+        String line;
+
         try {
-            while (iterator.hasNext()) {
-                String[] line = iterator.nextLine().split("\t");
-                String key = line[0].split("_")[1];
+            while ((line = reader.readLine()) != null) {
+                String[] lineSplit = line.split("\t");
+                String key = lineSplit[0].split("_")[1];
 
                 if ("count".equals(key)) {
-                    mCountTotal = Integer.parseInt(line[1]);
+                    mCountTotal = Integer.parseInt(lineSplit[1]);
                 } else {
-                    mCountDirection[Integer.parseInt(key) / 45] = Integer.parseInt(line[1]);
+                    mCountDirection[Integer.parseInt(key) / 45] = Integer.parseInt(lineSplit[1]);
                 }
 
             }
         } finally {
-            LineIterator.closeQuietly(iterator);
+            IOUtils.closeQuietly(reader);
         }
     }
 

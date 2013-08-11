@@ -7,6 +7,9 @@ import org.apache.hadoop.util.ToolRunner;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 
 /**
@@ -53,14 +56,14 @@ public class Main {
             timePercentile = System.currentTimeMillis() - time - (timeSimulation > 0 ? timeSimulation : 0);
         }
 
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
         if (timeSimulation > 0) {
-            System.out.println("Time (ms) needed for simulation: " + timeSimulation);
+            System.out.println("Time (hh:mm:ss) needed for simulation: " + dateFormat.format(new Date(timeSimulation - 3600000)));
         }
         if (timePercentile > 0) {
-            System.out.println("Time (ms) needed for percentile: " + timePercentile);
+            System.out.println("Time (hh:mm:ss) needed for percentile: " + dateFormat.format(new Date(timePercentile - 3600000)));
         }
 
         System.exit(res);
     }
-
 }
