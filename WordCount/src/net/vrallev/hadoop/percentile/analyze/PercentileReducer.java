@@ -42,6 +42,7 @@ public class PercentileReducer implements Reducer<IntWritable, Text, Text, Text>
 
             val = val[1].split("_");
 
+            // calculate the percentile number
             double percentile;
             if (valString.endsWith("t")) {
                 int lineNumberTotal = Integer.parseInt(val[1].substring(0, val[1].length() - 1));
@@ -51,6 +52,7 @@ public class PercentileReducer implements Reducer<IntWritable, Text, Text, Text>
                 percentile = lineNumberDirection / (double) mCountDirection[Integer.parseInt(direction) / 45];
             }
 
+            // add the percentile number as key for the output
             int label = (int) (percentile * 100);
             StringBuilder builder = new StringBuilder("Q_");
             if (label == 100) {

@@ -42,6 +42,7 @@ public class Main {
         int res = 0;
         long timeSimulation = -1;
         if (Boolean.parseBoolean(props.getProperty(SimulationTool.SIMULATE, "false"))) {
+            // user chose to start a simulation
             res = ToolRunner.run(new SimulationTool(props), args);
             timeSimulation = System.currentTimeMillis() - time;
         }
@@ -52,6 +53,7 @@ public class Main {
 
         long timePercentile = -1;
         if (Boolean.parseBoolean(props.getProperty(PercentileTool.ANALYZE, "false"))) {
+            // user chose to start a simulation
             res = ToolRunner.run(new PercentileTool(props), args);
             timePercentile = System.currentTimeMillis() - time - (timeSimulation > 0 ? timeSimulation : 0);
         }

@@ -2,7 +2,6 @@ package net.vrallev.hadoop.percentile.simulate;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
@@ -10,7 +9,6 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
-import java.io.File;
 import java.util.Properties;
 
 /**
@@ -48,46 +46,14 @@ public class SimulationTool extends Configured implements Tool {
 
     @Override
     public int run(String[] args) throws Exception {
-        /*
-        Simulation simulation = null;
 
-        // start with 2, 0 is input folder, 1 is output folder
-        for (int i = 2; i < args.length; i++) {
-            if (CLEAR_OUTPUT_FOLDER.equalsIgnoreCase(args[i])) {
-                File file = new File(args[1]);
-                if (file.exists() && file.isDirectory()) {
-                    FileUtil.fullyDelete(file);
-                }
-
-            } else if (NUMBERS_AFTER_COMMA.equalsIgnoreCase(args[i])) {
-                i++;
-                int numbersAfterComma = Integer.parseInt(args[i]); // try to parse
-                getConf().set(NUMBERS_AFTER_COMMA, String.valueOf(numbersAfterComma));
-
-            } else if (NUMBER_OF_SIMULATIONS.equalsIgnoreCase(args[i])) {
-                i++;
-                int numberOfSimulations = Integer.parseInt(args[i]); // try to parse
-                getConf().set(NUMBER_OF_SIMULATIONS, String.valueOf(numberOfSimulations));
-
-            } else if (args[i] != null) {
-                try {
-                    simulation = (Simulation) Class.forName(args[i]).newInstance();
-                } catch (Exception e) {
-                    // ignore
-                }
-            }
-        }
-
-        if (simulation != null) {
-            getConf().set(Simulation.class.getSimpleName(), simulation.getClass().getName());
-        }
-        */
-
+        // pass the parameters to the components
         getConf().set(SIMULATION_CLASS, mSimulation.getClass().getName());
         getConf().setInt(NUMBER_OF_SIMULATIONS, mNumberOfSimulations);
         getConf().setInt(NUMBERS_AFTER_COMMA, mNumbersAfterComma);
 
         if (mClearOutputFolder) {
+            // clear output
             FileSystem.get(getConf()).delete(mOutputFolder, true);
         }
 
@@ -98,13 +64,10 @@ public class SimulationTool extends Configured implements Tool {
         conf.setOutputValueClass(Text.class);
 
         conf.setMapperClass(SimulationMapper.class);
-        // conf.setCombinerClass(SimulationReducer.class);
         conf.setReducerClass(SimulationReducer.class);
 
         conf.setInputFormat(TextInputFormat.class);
         conf.setOutputFormat(OutFormat.class);
-
-        conf.setNumReduceTasks(1);
 
         FileInputFormat.setInputPaths(conf, mInputFolder);
         FileOutputFormat.setOutputPath(conf, mOutputFolder);
@@ -117,6 +80,7 @@ public class SimulationTool extends Configured implements Tool {
     private static class OutFormat extends MultipleTextOutputFormat<Text, Text> {
         @Override
         protected String generateFileNameForKeyValue(Text key, Text value, String name) {
+            // "total_" is used as prefix to differentiate between all simulations and the directions
             if (key.toString().startsWith("total_")) {
                 return "total_simulation.txt";
             }

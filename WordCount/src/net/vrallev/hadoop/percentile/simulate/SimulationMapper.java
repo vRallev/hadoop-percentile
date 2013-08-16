@@ -19,7 +19,7 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
     public static final String DISTANCE = "DISTANCE";
     public static final String HAS_VEGETATION = "HAS_VEGETATION";
 
-    public static final DoubleWritable COUNT_KEY = new DoubleWritable(Double.MAX_VALUE);
+    public static final DoubleWritable COUNT_KEY = new DoubleWritable(-Double.MAX_VALUE); // Do not use Double.MIN_VALUE
 
     private Simulation mSimulation;
     private int mNumberOfSimulations;
@@ -61,15 +61,25 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
         mValue.set(nodeRef + "_" + direction);
 
         for (int i = 0; i < mNumberOfSimulations; i++) {
+            // simulate and collect results
             mSimulationResult.set(round(mSimulation.simulate(distance, hasVegetation), mNumbersAfterComma));
             output.collect(mSimulationResult, mValue);
         }
 
+        // count one value for the direction, we need this for the total count of simulations (see reducer)
         mTextValue.set(direction);
         output.collect(COUNT_KEY, mTextValue);
     }
 
-    public static String[] parse(LongWritable key, Text value) throws IllegalArgumentException {
+    /**
+     * Parse the input line.
+     *
+     * @param key The byte offset of the line.
+     * @param value The input line.
+     * @return The parsed token from the input line.
+     * @throws IllegalArgumentException If the input format is wrong.
+     */
+    private static String[] parse(LongWritable key, Text value) throws IllegalArgumentException {
 
         // String line = "Insert into HS_NRW_4708_NEIGHBOUR (DIRECTION,NODE_REF,BUFFER_ZONE,DISTANCE,HAS_VEGETATION,JKI_ID,OBJART,LF08_LF_ID,LF04_BBA_ID) values ('270','27270','1','5,1','0','632755','4101','640580','1227424');";
         String[] tokens = value.toString().split(" ");
@@ -126,6 +136,12 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
         return result;
     }
 
+    /**
+     *
+     * @param tokens The parsed tokens from the input.
+     * @param key The key for requested value.
+     * @return The key's value.
+     */
     private String getValue(String[] tokens, String key) {
         int index = -1;
         for (int i = 0; i < tokens.length / 2; i++) {
@@ -142,8 +158,22 @@ public class SimulationMapper implements Mapper<LongWritable, Text, DoubleWritab
         }
     }
 
+    /**
+     * Rounds the value.
+     *
+     * @param number The number, which should be round.
+     * @param countAfterComma Decides how many numbers after the comma should be left. If the value is too big, the same
+     *                        number is returned.
+     * @return The rounded number.
+     */
     private static double round(double number, int countAfterComma) {
         long val = Math.round(number * Math.pow(10, countAfterComma));
+
+        if (val == Long.MAX_VALUE || val == Long.MIN_VALUE) {
+            // happens, when countAfterComma is too big
+            return number;
+        }
+
         return val / Math.pow(10, countAfterComma);
     }
 }

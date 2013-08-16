@@ -30,6 +30,7 @@ public class PercentileMapper implements Mapper<LongWritable, Text, IntWritable,
         mLinesTotal = new int[100];
         mLinesDirection = new int[8][100];
 
+        // Fill the arrays with the line numbers of the percentiles.
         fillPlaceholder(countTotal, mLinesTotal);
         for (int i = 0; i < mLinesDirection.length; i++) {
             fillPlaceholder(countDirection[i], mLinesDirection[i]);
@@ -48,17 +49,21 @@ public class PercentileMapper implements Mapper<LongWritable, Text, IntWritable,
         String[] val = valString.split(";");
         String direction = val[0].substring(val[0].indexOf("_") + 1);
 
+        // parse line numbers added by the simulation
         val = val[1].split("_");
         int lineNumberDirection = Integer.parseInt(val[0]);
         int lineNumberTotal = Integer.parseInt(val[1]);
 
+        // check, if the line number is a percentile for all simulations
         int lineCountForNumber = getLineCountForNumber(lineNumberTotal, mLinesTotal);
         mKey.set(lineNumberTotal);
         while (lineCountForNumber > 0) {
             lineCountForNumber--;
+            // Use "t" as suffix, so we can create a different file name in the OutFormat class.
             output.collect(mKey, new Text(valString + "t"));
         }
 
+        // check if the line number is a percentile for the direction
         lineCountForNumber = getLineCountForNumber(lineNumberDirection, mLinesDirection[Integer.parseInt(direction) / 45]);
         mKey.set(lineNumberDirection);
         while (lineCountForNumber > 0) {
@@ -67,6 +72,12 @@ public class PercentileMapper implements Mapper<LongWritable, Text, IntWritable,
         }
     }
 
+    /**
+     * Calculate the line numbers of the percentiles.
+     *
+     * @param simulationCount The number of simulations.
+     * @param placeholder The array, which contains the percentile lines after the method call.
+     */
     private static void fillPlaceholder(int simulationCount, int[] placeholder) {
         double stepSize = simulationCount / (double) placeholder.length;
         double line = 0;
@@ -84,6 +95,11 @@ public class PercentileMapper implements Mapper<LongWritable, Text, IntWritable,
         }
     }
 
+    /**
+     * @param lineNumber The searched line number.
+     * @param placeHolder The array containing the percentiles' line numbers.
+     * @return How often the lineNumber is used (usually one).
+     */
     private static int getLineCountForNumber(int lineNumber, int[] placeHolder) {
         int res = 0;
         for (int value : placeHolder) {

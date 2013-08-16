@@ -46,12 +46,15 @@ public class PercentileTool extends Configured implements Tool {
 
     @Override
     public int run(String[] args) throws Exception {
+        // parse the file to know how much simulation were calculated
         parseSimulationCount(mSimulationCountFile);
 
         if (mClearOutputFolder) {
+            // clear output
             FileSystem.get(getConf()).delete(mOutputFolder, true);
         }
 
+        // pass parameters to components
         getConf().setInt("count_total", mCountTotal);
         for (int i = 0; i < mCountDirection.length; i++) {
             getConf().setInt("count_" + (i * 45), mCountDirection[i]);
@@ -64,7 +67,6 @@ public class PercentileTool extends Configured implements Tool {
         conf.setOutputValueClass(Text.class);
 
         conf.setMapperClass(PercentileMapper.class);
-        // conf.setCombinerClass(SimulationReducer.class);
         conf.setReducerClass(PercentileReducer.class);
 
         conf.setInputFormat(TextInputFormat.class);
@@ -78,6 +80,12 @@ public class PercentileTool extends Configured implements Tool {
         return 0;
     }
 
+    /**
+     * Parses the simulation count file.
+     *
+     * @param simulationCount {@link Path} to the file, which contains the simulation count.
+     * @throws IOException If an IO error occurs.
+     */
     private void parseSimulationCount(Path simulationCount) throws IOException {
         mCountDirection = new int[8];
 
@@ -106,6 +114,8 @@ public class PercentileTool extends Configured implements Tool {
         @Override
         protected String generateFileNameForKeyValue(Text key, Text value, String name) {
             String valString = value.toString();
+
+            // "t" is used as suffix to differentiate between all simulations and the directions
             if (valString.endsWith("t")) {
                 value.set(valString.substring(0, valString.length() - 1));
                 return "all.txt";
